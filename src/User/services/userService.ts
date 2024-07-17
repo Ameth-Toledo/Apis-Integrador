@@ -88,19 +88,37 @@ export class UserService {
             if (userFinded) {
                 const salt = await bcrypt.genSalt(saltRounds);
 
+                // Verificar y actualizar cada campo de userData si está presente
                 if (userData.name) {
                     userFinded.name = userData.name;
                 }
-                if (userData.password) {
-                    userFinded.password = await bcrypt.hash(userData.password, salt);
+                if (userData.second_name) {
+                    userFinded.second_name = userData.second_name;
+                }
+                if (userData.last_name_paternal) {
+                    userFinded.last_name_paternal = userData.last_name_paternal;
+                }
+                if (userData.last_name_maternal) {
+                    userFinded.last_name_maternal = userData.last_name_maternal;
                 }
                 if (userData.email) {
                     userFinded.email = userData.email;
                 }
+                if (userData.password) {
+                    userFinded.password = await bcrypt.hash(userData.password, salt);
+                }
+                if (userData.role_name) {
+                    userFinded.role_name = userData.role_name;
+                }
+                if (userData.updated_at) {
+                    userFinded.updated_at = DateUtils.formatDate(new Date());
+                }
+                if (userData.updated_by) {
+                    userFinded.updated_by = userData.updated_by;
+                }
                 if (userData.deleted !== undefined) {
                     userFinded.deleted = userData.deleted;
                 }
-                userFinded.updated_at = DateUtils.formatDate(new Date());
 
                 return await UserRepository.updateUser(userId, userFinded);
             } else {

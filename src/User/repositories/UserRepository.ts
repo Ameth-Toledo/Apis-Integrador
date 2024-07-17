@@ -19,7 +19,7 @@ export class UserRepository {
     }
     
     public static async findById(id: number): Promise<User | null> {
-        const query = "SELECT * FROM user WHERE id = ? AND deleted = 0";
+        const query = "SELECT * FROM user WHERE user_id = ? AND deleted = 0";
         return new Promise((resolve, reject) => {
             connection.query(query, [id], (error, results) => {
                 if (error) {
@@ -71,46 +71,79 @@ export class UserRepository {
         });
       }
 
-    public static async createUser(user: User): Promise<User> {
-        const { name, last_name, email, password, created_by, updated_at, updated_by, deleted } = user;
-        const query = `INSERT INTO user (name, last_name, email, password, created_by, updated_at, updated_by, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-        const values = [name, last_name, email, password, created_by, updated_at, updated_by, deleted ? 1 : 0];
-
+      public static async createUser(user: User): Promise<User> {
+        const { user_id, name, second_name, last_name_paternal, last_name_maternal, email, password, role_name, created_by, updated_by, deleted } = user;
+        const query = `INSERT INTO user (user_id, name, second_name, last_name_paternal, last_name_maternal, email, password, role_name, created_by, updated_by, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const values = [user_id, name, second_name, last_name_paternal, last_name_maternal, email, password, role_name, created_by, updated_by, deleted ? 1 : 0];
+    
         return new Promise((resolve, reject) => {
-            connection.query(query, values, (error, result) => {
+            connection.query(query, values, (error) => {
                 if (error) {
                     reject(error);
                 } else {
-                    const createUserId = (result as any).insertId;
-                    const createdUser: User = { ...user, user_id: createUserId };
+                    const createdUser: User = { ...user };
                     resolve(createdUser);
                 }
             });
         });
-    }
+    }        
     
     public static async updateUser(userId: number, userData: User): Promise<User | null> {
-        const { name, last_name, email, updated_at, updated_by, deleted } = userData;
-        const query = `UPDATE user SET name = ?, email = ?, updated_at = ?, updated_by = ?, deleted = ? WHERE id = ?`;
-        const values = [name, last_name, email, updated_at, updated_by, deleted ? 1 : 0, userId];
-
-        return new Promise((resolve, reject) => {
-            connection.query(query, values, (error, result) => {
-                if (error) {
-                    reject(error);
-                } else {
-                    if ((result as any).affectedRows > 0) {
-                        resolve({ ...userData, user_id: userId });
+        const { name, second_name, last_name_paternal, last_name_maternal, email, password, role_name, updated_at, updated_by, deleted } = userData;
+        const query = `
+            UPDATE user 
+            SET 
+                name = ?, 
+                second_name = ?, 
+                last_name_paternal = ?, 
+                last_name_maternal = ?, 
+                email = ?, 
+                password = ?, 
+                role_name = ?, 
+                updated_at = ?, 
+                updated_by = ?, 
+                deleted = ? 
+            WHERE user_id = ?`;
+        const values = [name, second_name, last_name_paternal, last_name_maternal, email, password, role_name, updated_at, updated_by, deleted ? 1 : 0, userId];
+    
+        try {
+            console.log('Query:', query);  // Log the query
+            console.log('Values:', values);  // Log the values
+    
+            const result: any = await new Promise((resolve, reject) => {
+                connection.query(query, values, (error, result) => {
+                    if (error) {
+                        console.error('Query Error:', error);  // Log the error
+                        reject(error);
                     } else {
-                        resolve(null);
+                        resolve(result);
                     }
-                }
+                });
             });
-        });
+    
+            console.log('Update Result:', result);  // Log the result
+    
+            if (result.affectedRows > 0) {
+                // Return the updated user data
+                return { ...userData, user_id: userId };
+            } else {
+                return null;
+            }
+        } catch (error) {
+            // Assert error type as Error
+            if (error instanceof Error) {
+                console.error('Catch Error:', error.message);  // Log the error message
+                throw new Error(`Error updating user: ${error.message}`);
+            } else {
+                console.error('Unknown Error:', error);  // Log the unknown error
+                throw new Error('Unknown error updating user');
+            }
+        }
     }
 
+    
     public static async deleteUser(id: number): Promise<boolean> {
-        const query = 'DELETE FROM user WHERE id = ?';
+        const query = 'DELETE FROM user WHERE user_id = ?';
         return new Promise((resolve, reject) => {
             connection.query(query, [id], (error, result) => {
                 if (error) {

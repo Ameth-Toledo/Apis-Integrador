@@ -10,7 +10,7 @@ export const loginUser = async (req: Request, res: Response) => {
         const token = await UserService.login(email, password);
 
         if (!token) {
-            res.status(401).json({ message: 'Invalid name or password' });
+            res.status(401).json({ message: 'Invalid email or password' });
         } else {
             const payload = jwt.verify(token, secretKey) as any;
             res.status(200).json({ token, id: payload.id });
