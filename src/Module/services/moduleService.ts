@@ -23,43 +23,44 @@ export class ModuleService {
         }
     }
 
-    public static async addModule(module: Module) {
-        try {
-            module.created_at = DateUtils.formatDate(new Date()); 
-            module.updated_at = DateUtils.formatDate(new Date()); 
-
-            const createdModule = await ModuleRepository.createModule(module);
-
-            return { module: createdModule };
-        } catch (error: any) {
-            throw new Error(`Error creating module: ${error.message}`);
-        }
+    public static async createModule(file: Express.Multer.File, moduleData: Partial<Module>): Promise<number> {
+        const urlFile = `http://localhost:3000/uploads/${file.filename}`;
+        console.log(urlFile);
+    
+        const module: Module = {
+            module_id: null,
+            course_id: moduleData.course_id ?? null,
+            title: moduleData.title || '',
+            purpose: moduleData.purpose || '',
+            description: moduleData.description || '',
+            url: urlFile,
+            moduleNumber: moduleData.moduleNumber || 0,
+            teacher: moduleData.teacher || '',
+            created_by: moduleData.created_by || '',
+            created_at: new Date().toISOString().replace('T', ' ').replace('Z', ''),
+            updated_by: moduleData.updated_by || '',
+            updated_at: new Date().toISOString().replace('T', ' ').replace('Z', ''),
+            deleted: moduleData.deleted ?? false
+        };
+    
+        const createdModule = await ModuleRepository.createModule(module);
+        return createdModule.module_id ?? 0;
     }
 
-    public static async modifyModule(moduleId: number, moduleData: Module) {
+    public static async modifyModule(moduleId: number, moduleData: Module, file?: Express.Multer.File) {
         try {
             const moduleFound = await ModuleRepository.findById(moduleId);
             if (moduleFound) {
-                if (moduleData.title) {
-                    moduleFound.title = moduleData.title;
-                }
-                if (moduleData.content) {
-                    moduleFound.content = moduleData.content;
-                }
-                if (moduleData.description) {
-                    moduleFound.description = moduleData.description;
-                }
-                if (moduleData.material) {
-                    moduleFound.material = moduleData.material;
-                }
-                if (moduleData.teacher) {
-                    moduleFound.teacher = moduleData.teacher;
-                }
-                if (moduleData.deleted !== undefined) {
-                    moduleFound.deleted = moduleData.deleted;
+                moduleFound.title = moduleData.title || moduleFound.title;
+                moduleFound.purpose = moduleData.purpose || moduleFound.purpose;
+                moduleFound.description = moduleData.description || moduleFound.description;
+                moduleFound.teacher = moduleData.teacher || moduleFound.teacher;
+                moduleFound.deleted = moduleData.deleted ?? moduleFound.deleted;
+                if (file) {
+                    moduleFound.url = `http://localhost:3000/uploads/${file.filename}`;
                 }
                 moduleFound.updated_at = DateUtils.formatDate(new Date());
-
+    
                 return await ModuleRepository.updateModule(moduleId, moduleFound);
             } else {
                 return null;
@@ -71,7 +72,8 @@ export class ModuleService {
 
     public static async deleteModule(moduleId: number): Promise<boolean> {
         try {
-            return await ModuleRepository.deleteModule(moduleId);
+            const result = await ModuleRepository.deleteModule(moduleId);
+            return result ? true : false;
         } catch (error: any) {
             throw new Error(`Error deleting module: ${error.message}`);
         }
@@ -79,7 +81,8 @@ export class ModuleService {
 
     public static async deleteModuleLogic(moduleId: number): Promise<boolean> {
         try {
-            return await ModuleRepository.deleteLogic(moduleId);
+            const result = await ModuleRepository.deleteLogic(moduleId);
+            return result ? true : false;
         } catch (error: any) {
             throw new Error(`Error logically deleting module: ${error.message}`);
         }

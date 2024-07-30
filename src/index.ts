@@ -1,6 +1,7 @@
 import express, { Application } from 'express';
 import bodyParser from 'body-parser';
 import * as dotenv from 'dotenv';
+import cors from 'cors';
 import userRoutes from './User/routes/userRoutes';
 import examRoutes from './Exam/routes/examRoutes';
 import courseRoutes from './Course/routes/courseRoutes';
@@ -20,7 +21,10 @@ dotenv.config();
 const app: Application = express();
 const port: number = parseInt(process.env.PORT as string, 10) || 3000;
 
-app.use(express.static(path.join(__dirname, '../public')));
+// Habilitar CORS
+app.use(cors());
+
+app.use(express.static(path.join(__dirname, '../uploads')));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));

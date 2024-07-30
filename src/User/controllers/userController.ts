@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import { UserService } from '../services/userService'; 
+import { UserService } from '../services/userService';
 import jwt from 'jsonwebtoken';
+import { User } from '../models/User';
 
 const secretKey = process.env.SECRET || '';
 
@@ -50,35 +51,38 @@ export const getUserById = async (req: Request, res: Response) => {
 
 export const createUser = async (req: Request, res: Response) => {
     try {
-        const newUser = await UserService.addUser(req.body);
-        if (newUser) {
-            res.status(201).json(newUser);
-        } else {
-            res.status(400).json({ message: 'User creation failed' });
-        }
+        const newUserData: Partial<User> = req.body;
+        const file = req.file;
+        
+        // Handle cases where file might not be uploaded
+        const result = await UserService.addUser(file, newUserData as User);
+        res.status(201).json({ message: 'User created', userId: result.user.user_id });
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: 'Error creating user', error: error.message });
     }
 };
 
 export const updateUser = async (req: Request, res: Response) => {
     try {
         const userId = parseInt(req.params.id, 10);
-        const updatedUser = await UserService.modifyUser(userId, req.body);
-        if (updatedUser) {
-            res.status(200).json(updatedUser);
+        const updatedUserData: User = req.body;
+        const file = req.file;
+
+        const result = await UserService.modifyUser(userId, updatedUserData, file);
+        if (result) {
+            res.status(200).json({ message: 'User updated', user: result });
         } else {
-            res.status(404).json({ message: 'User not found or update failed' });
+            res.status(404).json({ message: 'User not found' });
         }
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ message: 'Error updating user', error });
     }
 };
 
 export const deleteUser = async (req: Request, res: Response) => {
     try {
         const userId = parseInt(req.params.id, 10);
-        const deleted = await UserService.deletedUser(userId);
+        const deleted = await UserService.deleteUser(userId);
         if (deleted) {
             res.status(200).json({ message: 'User deleted successfully' });
         } else {
@@ -96,7 +100,7 @@ export const deleteLogicalUser = async (req: Request, res: Response) => {
         if (success) {
             res.status(200).json({ message: 'User logically deleted successfully' });
         } else {
-            res.status(404).json({ message: 'User not found or already logically deleted' });
+            res.status(404).json({ message: 'User not found or logical deletion failed' });
         }
     } catch (error: any) {
         res.status(500).json({ error: error.message });

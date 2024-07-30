@@ -1,9 +1,9 @@
 export interface Role {
-    role_id: number | null;
-    role_name: number;
-    created_by: string;
-    created_at: string;
-    updated_by: string;
-    updated_at: string;
+    role_id: number;
+    role_name: string;
+    created_by: number;
+    created_at: Date;
+    updated_by: number;
+    updated_at: Date;
     deleted: boolean;
 }

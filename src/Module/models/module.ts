@@ -2,9 +2,10 @@ export interface Module {
     module_id: number | null;
     course_id: number | null;
     title: string;
-    content: string;
+    purpose: string;
     description: string;
-    material: string;
+    url: string;
+    moduleNumber: number;
     teacher: string;
     created_by: string;
     created_at: string;

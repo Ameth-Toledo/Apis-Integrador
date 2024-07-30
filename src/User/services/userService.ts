@@ -1,5 +1,6 @@
 import { UserRepository } from "../repositories/UserRepository";
 import { User } from "../models/User";
+import { RoleRepository } from "../../Role/repositories/RoleRepository"; 
 import { DateUtils } from "../../shared/utils/DateUtils"; 
 import bcrypt from 'bcrypt';
 import jwt from "jsonwebtoken";
@@ -23,7 +24,7 @@ export class UserService {
                 return null;
             }
             const payload = { id: user.user_id, email: user.email, password: user.password };
-            return jwt.sign(payload, secretKey, { expiresIn: '1h' });
+            return jwt.sign(payload, secretKey, { expiresIn: '24h' });
         } catch (error: any) {
             throw new Error(`Login error: ${error.message}`);
         }
@@ -61,8 +62,14 @@ export class UserService {
         }
     }
 
-    public static async addUser(user: User) {
+    public static async addUser(file: Express.Multer.File | undefined, user: User) {
         try {
+            const role = await RoleRepository.findByName(user.role_name); // Verificar si el rol existe
+
+            if (!role) {
+                throw new Error('Role does not exist');
+            }
+
             const salt = await bcrypt.genSalt(saltRounds);
 
             if (!user.password) {
@@ -74,15 +81,20 @@ export class UserService {
 
             user.password = await bcrypt.hash(user.password, salt);
 
+            if (file) {
+                const pdfUrl = `http://localhost:3000/uploads/${file.filename}`;
+                user.pdf = pdfUrl;
+            }
+
             const createdUser = await UserRepository.createUser(user);
 
-            return { user: createdUser};
+            return { user: createdUser };
         } catch (error: any) {
             throw new Error(`Error creating user: ${error.message}`);
         }
     }
 
-    public static async modifyUser(userId: number, userData: User) {
+    public static async modifyUser(userId: number, userData: User, file?: Express.Multer.File) {
         try {
             const userFinded = await UserRepository.findById(userId);
             if (userFinded) {
@@ -101,24 +113,22 @@ export class UserService {
                 if (userData.last_name_maternal) {
                     userFinded.last_name_maternal = userData.last_name_maternal;
                 }
+                if (userData.role_name) {
+                    userFinded.role_name = userData.role_name;
+                }
                 if (userData.email) {
                     userFinded.email = userData.email;
                 }
                 if (userData.password) {
                     userFinded.password = await bcrypt.hash(userData.password, salt);
                 }
-                if (userData.role_name) {
-                    userFinded.role_name = userData.role_name;
+                if (file) {
+                    const pdfUrl = `http://localhost:3000/uploads/${file.filename}`;
+                    userFinded.pdf = pdfUrl;
                 }
-                if (userData.updated_at) {
-                    userFinded.updated_at = DateUtils.formatDate(new Date());
-                }
-                if (userData.updated_by) {
-                    userFinded.updated_by = userData.updated_by;
-                }
-                if (userData.deleted !== undefined) {
-                    userFinded.deleted = userData.deleted;
-                }
+
+                userFinded.updated_at = DateUtils.formatDate(new Date());
+                userFinded.updated_by = userData.updated_by;
 
                 return await UserRepository.updateUser(userId, userFinded);
             } else {
@@ -129,9 +139,15 @@ export class UserService {
         }
     }
 
-    public static async deletedUser(userId: number): Promise<boolean> {
+    public static async deleteUser(userId: number): Promise<boolean> {
         try {
-            return await UserRepository.deleteUser(userId);
+            const userExists = await UserRepository.findById(userId);
+            if (userExists) {
+                await UserRepository.deleteUser(userId);
+                return true;
+            } else {
+                return false;
+            }
         } catch (error: any) {
             throw new Error(`Error deleting user: ${error.message}`);
         }
@@ -139,7 +155,13 @@ export class UserService {
 
     public static async deleteUserLogic(userId: number): Promise<boolean> {
         try {
-            return await UserRepository.deleteLogic(userId);
+            const userExists = await UserRepository.findById(userId);
+            if (userExists) {
+                await UserRepository.deleteLogic(userId);
+                return true;
+            } else {
+                return false;
+            }
         } catch (error: any) {
             throw new Error(`Error logically deleting user: ${error.message}`);
         }

@@ -1,14 +1,15 @@
-import { Router } from "express";
-import { getAllModules, getModuleById, updateModule, createModule, deleteModule, deleteLogicalModule } from "../controllers/moduleControllers";
-import { authMiddleware } from "../../shared/middlewares/auth";
+import { Router } from 'express';
+import { getAllModules, getModuleById, createModule, updateModule, deleteModule, deleteLogicalModule } from '../controllers/moduleControllers';
+import upload from '../../shared/middlewares/uploadMiddleware';
 
-const moduleRoutes: Router = Router();
+const moduleRoutes = Router();
 
-moduleRoutes.get('/', authMiddleware, getAllModules);
-moduleRoutes.get('/:id', authMiddleware, getModuleById);
-moduleRoutes.put('/:id', authMiddleware, updateModule);
-moduleRoutes.post('/', createModule);
-moduleRoutes.put('/deleted/:id/', authMiddleware, deleteLogicalModule);
-moduleRoutes.delete('/:id', authMiddleware, deleteModule);
+// Rutas de módulos
+moduleRoutes.get('/modules', getAllModules);
+moduleRoutes.get('/modules/:id', getModuleById);
+moduleRoutes.post('/modules', upload.single('file'), createModule);
+moduleRoutes.put('/modules/:id', upload.single('file'), updateModule);
+moduleRoutes.delete('/modules/:id', deleteModule);
+moduleRoutes.patch('/modules/:id', deleteLogicalModule);
 
 export default moduleRoutes;
